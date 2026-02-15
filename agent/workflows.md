@@ -1,80 +1,47 @@
-# AOAIA Workflows
+# Workflows
 
-This document defines the operational execution logic of the Autonomous Operational Analytics Integrity Agent (AOAIA).
+This repo contains the full workflow used by the Autonomous Operational Analytics Integrity Agent (AOAIA) to audit a raw operational dataset, apply a safe recovery layer, generate a privileged remediation playbook, and validate the curated outcome.
 
-The agent follows a deterministic, multi-step governance workflow to protect operational analytics integrity.
+## Workflow 1 — Baseline Audit (READ-ONLY)
 
----
+Goal: quantify schema and data integrity blockers in `datasets_raw` without modifying any data.
 
-## Workflow Overview
+Steps:
+1) Index existence + mapping snapshot
+2) Dataset overview: volume, time coverage, cardinalities, top segments
+3) Data quality diagnostics: nulls, invalid revenue (text -> numeric), segment concentration
+4) Health Score (0–100) + status classification (CLEAN / DEGRADED / BLOCKED)
+5) Safe Autopilot: runtime-based recovery queries (no writes)
 
-1. Index Inspection
-2. Dataset Overview
-3. Advanced Data Diagnostics
-4. Health Score Computation
-5. Safe Autopilot (if BLOCKED)
-6. Privileged Remediation Playbook (if WRITE_ENABLED)
-7. Post-Remediation Validation
-8. Continuous Monitoring Mode
+Queries: `queries/baseline_audit.md`  
+Output artifact: `artifacts/baseline_report.md`  
+Screenshots: `artifacts/screenshots/`
 
----
+## Workflow 2 — Privileged Remediation (WRITE-ENABLED via Kibana Dev Tools)
 
-## Execution Modes
+Goal: create a curated analytics index that is aggregation-safe and adds deterministic quality flags.
 
-### READ_ONLY Mode
-- Performs full audit
-- Generates safe recovery strategies
-- Produces remediation playbook
-- Does NOT modify indices
+Steps:
+1) Create `datasets_curated` with corrected mappings (notably `revenue: double`)
+2) Reindex from `datasets_raw` -> `datasets_curated` with transformation script
+3) (Optional) Create alias `datasets_analytics` -> `datasets_curated`
+4) Create ingest pipeline `datasets_validation` for future protection
 
-### WRITE_ENABLED Mode
-- Executes curated index creation
-- Runs reindex transformation
-- Applies data quality flags
-- Optionally swaps alias
-- Creates ingest validation pipeline
+Playbook: `scripts/privileged_playbook_kibana_devtools.ndjson`  
+Queries: `queries/remediation_queries.md`
 
----
+## Workflow 3 — Post-Remediation Validation
 
-## Governance Philosophy
+Goal: prove the remediation worked and quantify before/after improvements.
 
-AOAIA separates:
+Validation checks:
+- Curated index exists and mapping is correct
+- Revenue aggregations succeed natively in `datasets_curated`
+- Quality flag distribution is present and consistent
+- Before/after metrics table is produced
 
-- Raw ingestion layer (`datasets_raw`)
-- Curated analytics layer (`datasets_curated`)
-- Analytics alias (`datasets_analytics`)
-
-Raw data is never modified.
-
----
-
-## Health Score Logic
-
-Four equal-weight dimensions (25 each):
-
-- Structure
-- Integrity
-- Usefulness
-- Risk
-
-Final score determines dataset state:
-
-- 85–100 → CLEAN
-- 60–84 → DEGRADED
-- <60 → BLOCKED
-
----
-
-## Monitoring Strategy
-
-After baseline is established:
-
-- Detect score degradation >10 points
-- Detect null increase >5%
-- Detect invalid value increase >3%
-
-Monitoring Status:
-
-- STABLE
-- DEGRADED
-- CRITICAL
+Queries: `queries/post_validation.md`  
+Output artifacts:
+- `artifacts/post_remediation_report.md`
+- `artifacts/before_after_metrics.md`
+- `artifacts/screenshots/`
