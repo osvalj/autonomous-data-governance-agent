@@ -65,3 +65,11 @@ POST datasets_raw/_search
     }
   }
 }
+
+# Baseline Audit Queries (datasets_raw)
+
+> Run in Kibana Dev Tools. READ-ONLY.
+
+## 1) Count
+```http
+GET datasets_raw/_count
