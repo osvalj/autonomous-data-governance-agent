@@ -1,0 +1,26 @@
+PUT datasets_curated
+{
+  "mappings": {
+    "properties": {
+      "country": { "type": "keyword" },
+      "created_at": { "type": "date" },
+      "customer_id": { "type": "keyword" },
+      "dataset_id": { "type": "keyword" },
+      "discount_code": { "type": "keyword" },
+      "ingested_at": { "type": "date" },
+      "order_date": { "type": "date" },
+      "order_id": { "type": "keyword" },
+      "product_category": { "type": "keyword" },
+      "quantity": { "type": "long" },
+      "revenue": { "type": "double" },
+      "data_quality_flag": { "type": "keyword" },
+      "curated_at": { "type": "date" }
+    }
+  }
+}
+
+POST _reindex
+{
+  "source": { "index": "datasets_raw" },
+  "dest": { "index": "datasets_curated" }
+}
